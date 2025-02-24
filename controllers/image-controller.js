@@ -5,6 +5,33 @@ import {
 } from "../helpers/cloudinary-helper.js";
 import fs from "fs/promises";
 
+export const getAllImages = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
+    const images = await Image.find({}).limit(limit).skip(skip);
+
+    if (images.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No images found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: images,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const uploadImage = async (req, res) => {
   try {
     //Check if file exists in request
