@@ -20,8 +20,15 @@ export const getAllImages = async (req, res) => {
       });
     }
 
+    const totalDocuments = await Image.countDocuments({});
+    const totalPages = Math.ceil(totalDocuments / limit);
+
     return res.status(200).json({
       success: true,
+      totalDocuments: totalDocuments,
+      returnedDocuments: images.length,
+      totalPages: totalPages,
+      currentPage: page,
       data: images,
     });
   } catch (error) {
