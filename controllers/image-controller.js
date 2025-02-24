@@ -53,9 +53,9 @@ export const uploadImage = async (req, res) => {
 
 export const deleteImgs = async (req, res) => {
   try {
-    //Check if the user is authenticated and the image IDs are provided
+    // Check if the user is authenticated and the image IDs are provided
     const { userId } = req.user;
-    const { publicIds } = req.body; //Expect an array of ids
+    const { publicIds } = req.body; // Expect an array of ids
 
     if (!userId) {
       return res.status(403).json({
@@ -63,40 +63,41 @@ export const deleteImgs = async (req, res) => {
         message: "You are not allowed to perform this action",
       });
     }
-    if (!publicIds || !publicIds.length === 0) {
+    if (!publicIds || publicIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Please provide the public Ids of the images",
+        message: "Please provide the public IDs of the images",
       });
     }
 
-    //Delete the images from cloudinary using the provided array of public Ids
-    const result = await deleteFromCloudinary(publicIds);
-    console.log(result);
-
-    //Check if there any unsuccessful deletions
-    const notFoundIds = Object.entries(result.deleted)
-      .filter(([_, status]) => status === "not_found")
-      .map(([id]) => id);
-    if (notFoundIds.length > 0) {
-      return res.status(404).json({
-        success: false,
-        message: "One or more images are non existent",
-      });
-    }
-
-    //Delete the images from the databse using the result from cloudinary
-    const deleteFromDB = Object.entries(result.deleted).map((publicId) =>
-      Image.findOneAndDelete({ publicId, uploadedBy: userId })
+    // Delete the images from the database
+    const deleteFromDB = publicIds.map((publicId) =>
+      Image.findOneAndDelete({ publicId, uploadedBy: userId }).select(
+        "publicId"
+      )
     );
 
     const dbResponse = await Promise.all(deleteFromDB);
 
-    //Return the results
+    // Extract valid deletions
+    const validDeletions = dbResponse
+      .filter((item) => item !== null) // Ensure only found images
+      .map((item) => item.publicId); // Extract publicId
+
+    if (validDeletions.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No images found with the provided IDs",
+      });
+    }
+
+    // Delete from Cloudinary
+    const result = await deleteFromCloudinary(validDeletions);
+
     return res.status(200).json({
       success: true,
       message: "Deleted images successfully",
-      data: dbResponse,
+      cloudinaryResponse: result,
     });
   } catch (error) {
     return res.status(500).json({
