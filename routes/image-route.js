@@ -10,7 +10,7 @@ router.post(
   "/upload",
   authMiddleware,
   adminMiddleware,
-  uploadMiddleWare.single("image"),
+  uploadMiddleWare.array("image", 5),
   uploadImage
 );
 

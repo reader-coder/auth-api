@@ -8,6 +8,7 @@ export const uploadToCloudinary = async (filePath) => {
       publicId: result.public_id,
     };
   } catch (error) {
-    console.error(error.message);
+    console.error("Cloudinary Upload Error:", error.message);
+    throw new Error("Failed to upload to Cloudinary");
   }
 };
